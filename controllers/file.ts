@@ -6,6 +6,8 @@ import crypto from 'crypto';
 import fs from 'fs';
 import copyfiles from 'copyfiles';
 import { fileURLToPath } from 'url';
+import sendMail from '../services/emailService.js';
+import emailTemplate from '../services/emailTemplate.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -87,5 +89,44 @@ export async function downloadFile(req: Request, res: Response) {
     res.download(filePath);
   } catch (error) {
     return res.render('download', { error: 'Something went wrong!' });
+  }
+}
+
+export async function sendFile(req: Request, res: Response) {
+  try {
+    const { uuid, emailTo, emailFrom } = req.body;
+
+    if (!uuid || !emailTo || !emailFrom) {
+      return res.status(422).send({ error: 'All fields are required!' });
+    }
+
+    const file = await File.findOne({ uuid });
+    if (!file) {
+      return res.status(422).send({ error: 'Link has been expired.' });
+    }
+
+    if (file?.sender) {
+      return res.status(422).send({ error: 'Email already sent.' });
+    }
+
+    file!.sender = emailFrom;
+    file!.receiver = emailTo;
+    await file.save();
+    sendMail({
+      from: emailFrom,
+      to: emailTo,
+      subject: 'File Share app',
+      text: `${emailFrom} shared a file with you.`,
+      html: emailTemplate({
+        emailFrom,
+        downloadLink: `${process.env.APP_BASE_URL}/files/${file.uuid}`,
+        size: file.size / 1000 + ' KB',
+        expires: '24 hours',
+      }),
+    });
+
+    return res.send({ success: 'Email has been successfully sent.' });
+  } catch (err: any) {
+    return res.status(500).send({ error: err.message });
   }
 }
