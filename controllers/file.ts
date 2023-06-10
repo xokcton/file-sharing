@@ -49,6 +49,9 @@ export function saveFile(req: Request, res: Response) {
 
     try {
       const response = await file.save();
+      copyfiles(['uploads/*', 'dist'], () => {
+        console.log('⚡️[server]: [uploads/*] successfully copied to "dist" folder.');
+      });
       return res.json({ file: `${process.env.APP_BASE_URL}/files/${response.uuid}` });
     } catch (err: any) {
       return res.status(500).send({ error: err.message });
@@ -58,8 +61,10 @@ export function saveFile(req: Request, res: Response) {
 
 export async function showFile(req: Request, res: Response) {
   try {
-    // copyfiles(['views/download.ejs', 'public/*', 'dist'], () => {
-    //   console.log('⚡️[server]: views/download.ejs successfully copied to "dist" folder.');
+    // copyfiles(['views/download.ejs', 'public/*', 'uploads/*', 'dist'], () => {
+    // console.log(
+    //   '⚡️[server]: [views/download.ejs], [public/*], [uploads/*] successfully copied to "dist" folder.',
+    // );
     // });
 
     const file = await File.findOne({ uuid: req.params.uuid });
