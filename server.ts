@@ -6,6 +6,7 @@ import showRouter from './routes/show.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import copyfiles from 'copyfiles';
+import cors from 'cors';
 
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +14,11 @@ const URI = process.env.MONGO_CONNECTION_URL || '';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const corsOptions = {
+  origin: process.env.ALLOWED_CLIENTS?.split(','),
+};
+app.use(cors(corsOptions));
 
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: false }));
